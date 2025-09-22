@@ -1,0 +1,46 @@
+{
+  "name": "keynest",
+  "version": "1.0.0",
+  "description": "KeyNest is a lightweight TypeScript key-value store with TTL, global cleanup of inactive data, and event support. Perfect for caching, session storage, and temporary data handling in Node.js apps.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/keynest.git"
+  },
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "keywords": [
+    "key-value",
+    "kv-store",
+    "ttl",
+    "cache",
+    "in-memory",
+    "storage",
+    "session",
+    "temporary",
+    "data-store",
+    "cleanup",
+    "memory",
+    "expirable",
+    "event-emitter",
+    "typescript",
+    "nodejs",
+    "rate-limit",
+    "throttle",
+    "smart-cache"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.6.3"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/keynest/issues"
+  },
+  "homepage": "https://github.com/your-username/keynest#readme"
+}
