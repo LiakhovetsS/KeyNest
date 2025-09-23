@@ -203,3 +203,4 @@ userStore.set("u1", { id: 1, name: "Alice" }, 10000);
 
 ---
 
+💡 *From developers who got tired of searching for simple tools.*
