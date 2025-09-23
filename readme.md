@@ -37,7 +37,7 @@
 ### 🚀 Installation
 
 ```sh
-npm install keynest
+npm install keynest-store
 ```
 
 ---
@@ -137,7 +137,7 @@ userStore.set("u1", { id: 1, name: "Alice" }, 10000);
 ### 🚀 Встановлення
 
 ```sh
-npm install keynest
+npm install keynest-store
 ```
 
 ---
