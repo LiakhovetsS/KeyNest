@@ -1,5 +1,6 @@
 import {TypedEventEmitter} from './Emitter';
-import {Key, RecordEntry, StoreEvents, StoreOptions, StoreStats} from '../interface';
+import {Key, pruneList, RecordEntry, StoreEvents, StoreOptions, StoreStats} from '../interface';
+import {Scheduler} from "./Scheduler";
 
 /**
  * @class KeyNestStore
@@ -7,26 +8,36 @@ import {Key, RecordEntry, StoreEvents, StoreOptions, StoreStats} from '../interf
  * @template K - Тип ключа (string | number | symbol)
  * @template V - Тип значення
  */
-export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>> {
+export class Store<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>> {
     private store = new Map<K, RecordEntry<V>>();
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
     private readonly defaultTTLms: number = 0;
     private readonly options: Required<
-        Pick<StoreOptions, 'cleanupEnabled' | 'cleanupIntervalMs' | 'staleThresholdMs' | 'touchOnGet'>
+        Pick<StoreOptions, 'cleanupEnabled' | 'cleanupIntervalMs' | 'staleThresholdMs'>
     >;
+    private scheduler = new Scheduler();
 
     constructor(opts?: StoreOptions) {
         super();
         this.options = {
-            cleanupEnabled: Boolean(opts?.cleanupEnabled),
+            cleanupEnabled: Boolean(opts?.cleanupEnabled) ?? false,
             cleanupIntervalMs: opts?.cleanupIntervalMs ?? 60 * 60 * 1000,
             staleThresholdMs: opts?.staleThresholdMs ?? 2 * 60 * 60 * 1000,
-            touchOnGet: opts?.touchOnGet ?? true,
         };
 
         if (this.options.cleanupEnabled) {
             this.startCleanup();
         }
+
+        this.scheduler.on('end', (name: string) => {
+            const value = name.replace('expire-', '');
+            const key = (String(value) as K);
+            const entry = this.store.get(key);
+            if (!entry) return;
+            this.store.delete(key);
+            this.emit('expired', key, entry.value);
+        });
+
     }
 
     /**
@@ -37,7 +48,7 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
      * @description Якщо ttlMs не вказано, використовується defaultTTLms. Якщо defaultTTLms також 0, запис не має терміну дії.
      *
      * */
-    set(key: K, value: V, ttlMs?: number): void {
+    set(key: K, value: V, ttlMs = 0): void {
         const now = Date.now();
         const effectiveTTL = ttlMs ?? this.defaultTTLms;
         const entry: RecordEntry<V> = {
@@ -47,6 +58,9 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
             ttlMs: effectiveTTL,
             expiresAt: effectiveTTL ? now + effectiveTTL : undefined,
         };
+        if (ttlMs > 0) {
+            entry.schedulerTaskId = this.scheduler.task(`expire-${String(key)}`, ttlMs);
+        }
         this.store.set(key, entry);
     }
 
@@ -55,7 +69,6 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
      * @param key - Ключ запису
      * @returns Значення запису або null, якщо запис не існує або прострочено
      * @description Якщо запис прострочено, він видаляється зі сховища і генерується подія 'expired'.
-     * Якщо опція touchOnGet увімкнена, час останнього доступу оновлюється.
      *
      * */
     get(key: K): V | null {
@@ -63,10 +76,7 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
         if (!entry) return null;
 
         if (this.checkExpired(key, entry)) return null;
-
-        if (this.options.touchOnGet) {
-            entry.lastAccessed = Date.now();
-        }
+        entry.lastAccessed = Date.now();
         return entry.value;
     }
 
@@ -92,9 +102,12 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
      * */
     delete(key: K): boolean {
         const entry = this.store.get(key);
+        if (entry && entry.schedulerTaskId) {
+            this.scheduler.stopTask(key as string);
+        }
         const existed = this.store.delete(key);
         if (existed) {
-            this.emit('deleted', key, entry);
+            this.emit('deleted', key, entry?.value);
         }
         return existed;
     }
@@ -106,7 +119,10 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
      * */
     clear(): void {
         for (const [key, entry] of this.store.entries()) {
-            this.emit('deleted', key, entry);
+            if (entry.schedulerTaskId) {
+                this.scheduler.stopTask(key as string);
+            }
+            this.emit('deleted', key, entry.value);
         }
         this.store.clear();
     }
@@ -132,31 +148,24 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
     /**
      * @method pruneNow Виконує негайне очищення прострочених та застарілих записів
      * @description Перевіряє всі записи у сховищі і видаляє ті, що прострочені або застарілі.
-     * Генерує відповідні події 'expired' або 'stale' для кожного видаленого запису.
+     * Генерує відповідні події 'expired' для кожного видаленого запису.
      * Якщо запис прострочено, він видаляється зі сховища і генерується подія 'expired'.
-     * Якщо запис вважається застарілим (не було доступу протягом staleThresholdMs), він видаляється і генерується подія 'stale'.
      * */
     pruneNow(): void {
         const now = Date.now();
-        const staleThresholdMs = this.options.staleThresholdMs;
-
+        const list: pruneList<V> = [];
         for (const [key, entry] of this.store.entries()) {
-            if (this.checkExpired(key, entry)) continue;
 
-            // if (entry.expiresAt !== undefined && now >= entry.expiresAt) {
-            //     this.store.delete(key);
-            //     this.emit('expired', key, entry);
-            //     continue;
-            // }
-            if (staleThresholdMs !== undefined) {
-                const ageSinceAccess = now - entry.lastAccessed;
-                if (ageSinceAccess >= staleThresholdMs) {
-                    this.store.delete(key);
-                    this.emit('stale', key, entry);
-                    continue;
+            if (entry.expiresAt !== undefined && now >= entry.expiresAt) {
+                if (entry.schedulerTaskId) {
+                    this.scheduler.stopTask(key as string);
                 }
+                this.store.delete(key);
+                list.push({key, entry});
             }
         }
+        this.emit('prune', list);
+
     }
 
     /**
@@ -190,7 +199,7 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
 
     /**
      * @method updateOptions Оновлює опції сховища
-     * @param opts - Об'єкт з новими опціями. Можна оновити будь-яку з опцій: cleanupEnabled, cleanupIntervalMs, staleThresholdMs, touchOnGet.
+     * @param opts - Об'єкт з новими опціями. Можна оновити будь-яку з опцій: cleanupEnabled, cleanupIntervalMs, staleThresholdMs.
      * @description Якщо змінено cleanupEnabled, метод відповідно запускає або зупиняє автоматичне очищення.
      * Якщо змінено cleanupIntervalMs і очищення увімкнено, метод перезапускає таймер з новим інтервалом.
      * */
@@ -199,7 +208,6 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
             this.options.cleanupIntervalMs = opts.cleanupIntervalMs;
         if (opts.staleThresholdMs !== undefined)
             this.options.staleThresholdMs = opts.staleThresholdMs;
-        if (opts.touchOnGet !== undefined) this.options.touchOnGet = opts.touchOnGet;
         if (opts.cleanupEnabled !== undefined) this.options.cleanupEnabled = opts.cleanupEnabled;
 
         if (this.options.cleanupEnabled && !this.cleanupTimer) {
@@ -231,8 +239,11 @@ export class KeyNestStore<K extends Key, V> extends TypedEventEmitter<StoreEvent
      * */
     private checkExpired(key: K, entry: RecordEntry<V>): boolean {
         if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
+            if (entry && entry.schedulerTaskId) {
+                this.scheduler.stopTask(key as string);
+            }
             this.store.delete(key);
-            this.emit('expired', key, entry);
+            this.emit('expired', key, entry.value);
             return true;
         }
         return false;

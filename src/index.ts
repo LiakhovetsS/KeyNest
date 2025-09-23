@@ -1,1 +1,3 @@
-export * from "./core/index";
+import {Store} from './core';
+
+export = Store;

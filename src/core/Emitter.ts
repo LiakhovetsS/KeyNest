@@ -17,6 +17,10 @@ import { EventEmitter } from 'node:events';
 export class TypedEventEmitter<T> {
     private emitter = new EventEmitter();
 
+    /**
+     * @param {'expired'|'deleted'|'prune'} event
+     * @param {Function} listener
+     */
     on<K extends keyof T>(event: K, listener: T[K]): this {
         this.emitter.on(event as string, listener as any);
         return this;

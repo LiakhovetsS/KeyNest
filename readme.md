@@ -49,9 +49,9 @@ npm install keynest
 import { KVStore } from "keynest";
 
 const kv = new KVStore<string, number>({
-  enableGlobalCleanup: true,
-  globalCleanupInterval: 1000 * 60 * 60, // 1 година
-  maxIdleTime: 1000 * 60 * 60 * 2 // 2 години
+    cleanupEnabled: true,
+    cleanupIntervalMs: 1000 * 60 * 60, // 1 година
+    staleThresholdMs: 1000 * 60 * 60 * 2 // 2 години
 });
 ```
 
@@ -144,9 +144,9 @@ npm install keynest
 import { KVStore } from "keynest";
 
 const kv = new KVStore<string, number>({
-  enableGlobalCleanup: true,
-  globalCleanupInterval: 1000 * 60 * 60, // 1 hour
-  maxIdleTime: 1000 * 60 * 60 * 2 // 2 hours
+    cleanupEnabled: true,
+    cleanupIntervalMs: 1000 * 60 * 60, // 1 hour
+    staleThresholdMs: 1000 * 60 * 60 * 2 // 2 hours
 });
 ```
 
