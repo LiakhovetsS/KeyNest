@@ -1,3 +1,5 @@
+
+// @ts-ignore
 import KNStore from "keynest-store";
 const store = new KNStore<string, any>({
     cleanupEnabled: true,
@@ -16,6 +18,9 @@ store.on('prune', (list=[]) => {
     console.log(`Pruned ${list.length} entries`, list);
 });
 
-store.set('key', {id: 1, sum: 150});
+store.set('userOrder', {id: 1, sum: 150});
 store.set('key2', {id: 1, sum: 130}, 1500);
 store.set('orderId', '234454534', 30_000);
+
+const value = store.get('userOrder');
+console.log('Value for userOrder:', value);
