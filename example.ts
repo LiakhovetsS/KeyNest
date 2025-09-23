@@ -1,4 +1,4 @@
-import KNStore from './dist';
+import KNStore from "keynest-store";
 const store = new KNStore<string, any>({
     cleanupEnabled: true,
     cleanupIntervalMs: 1000 * 60 * 60, // 1 година
