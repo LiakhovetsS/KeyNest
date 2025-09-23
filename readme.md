@@ -46,9 +46,9 @@ npm install keynest
 
 #### 1. Створення сховища
 ```ts
-import { KVStore } from "keynest";
+import KNStore from "keynest";
 
-const kv = new KVStore<string, number>({
+const kv = new KNStore<string, number>({
     cleanupEnabled: true,
     cleanupIntervalMs: 1000 * 60 * 60, // 1 година
     staleThresholdMs: 1000 * 60 * 60 * 2 // 2 години
@@ -69,12 +69,18 @@ kv.on("expired", (key, value) => {
 
 #### 4. Події глобального очищення
 ```ts
-kv.on("cleaned", (key, value) => {
-  console.log(`Запис із ключем ${key} видалено під час глобального очищення`);
+kv.on("prune", (list) => {
+  console.log(`Видалено записів: ${list.length}`);
+});
+```
+#### 5. Події видалення запису
+```ts
+kv.on("deleted", (key, value) => {
+  console.log(`Запис із ключем ${key} видалено вручну`);
 });
 ```
 
-#### 5. Використання з дженеріками
+#### 6. Використання з дженеріками
 ```ts
 interface User {
   id: number;
@@ -141,9 +147,9 @@ npm install keynest
 
 #### 1. Create a store
 ```ts
-import { KVStore } from "keynest";
+import KNStore from "keynest";
 
-const kv = new KVStore<string, number>({
+const kv = new KNStore<string, number>({
     cleanupEnabled: true,
     cleanupIntervalMs: 1000 * 60 * 60, // 1 hour
     staleThresholdMs: 1000 * 60 * 60 * 2 // 2 hours
@@ -164,12 +170,18 @@ kv.on("expired", (key, value) => {
 
 #### 4. Listen for global cleanup
 ```ts
-kv.on("cleaned", (key, value) => {
-  console.log(`Key=${key} removed during global cleanup`);
+kv.on("prune", (list) => {
+  console.log(`Pruned items count: ${list.length}`);
+});
+```
+#### 5. Listen for manual deletion
+```ts
+kv.on("deleted", (key, value) => {
+  console.log(`Запис із ключем ${key} видалено вручну`);
 });
 ```
 
-#### 5. Using with Generics
+#### 6. Using with Generics
 ```ts
 interface User {
   id: number;
