@@ -6,7 +6,7 @@
 
 ### 🔑 What is KeyNest?
 
-**KeyNest** is a lightweight key-value store library for TypeScript with support for:
+**KeyNest** is a lightweight in-memory key-value store library for TypeScript with support for:
 
 - **TTL (time-to-live):** automatic record expiration
 - **Global cleanup:** remove items not accessed for 2+ hours
@@ -106,7 +106,7 @@ userStore.set("u1", { id: 1, name: "Alice" }, 10000);
 
 ### 🔑 Що таке KeyNest?
 
-**KeyNest** — легка бібліотека для роботи з key-value сховищем на TypeScript з підтримкою:
+**KeyNest** — легка in-memory бібліотека для роботи з key-value сховищем на TypeScript з підтримкою:
 
 - **TTL (time-to-live):** автоматичне видалення даних після вказаного часу
 - **Глобальне очищення:** видалення записів, які не використовувалися понад 2 години
