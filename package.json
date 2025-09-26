@@ -31,7 +31,8 @@
     "smart-cache"
   ],
   "scripts": {
-    "build": "tsc && npm version patch",
+    "build:prod": "tsc && npm version patch",
+    "build": "tsc",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build"
   },

@@ -41,6 +41,15 @@ export class Store<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>
     }
 
     /**
+     * @property entriesSnapshot Повертає знімок поточних записів у сховищі
+     * @returns Масив об'єктів з ключами та відповідними записами
+     * @description Знімок не включає прострочені записи, оскільки вони видаляються при доступі.
+     * */
+    get entriesSnapshot(): { name: K; entry: RecordEntry<V> }[] {
+        return Array.from(this.store, ([name, entry]) => ({name, entry}));
+    }
+
+    /**
      * @method set Додає або оновлює запис у сховищі
      * @param key - Ключ запису
      * @param value - Значення запису
@@ -155,8 +164,7 @@ export class Store<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>
         const now = Date.now();
         const list: pruneList<V> = [];
         for (const [key, entry] of this.store.entries()) {
-
-            if (entry.expiresAt !== undefined && now >= entry.expiresAt) {
+            if (entry.lastAccessed !== undefined && now >= entry.lastAccessed) {
                 if (entry.schedulerTaskId) {
                     this.scheduler.stopTask(key as string);
                 }
@@ -220,15 +228,6 @@ export class Store<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>
         }
     }
 
-    /**
-     * @method entriesSnapshot Повертає знімок поточних записів у сховищі
-     * @returns Масив пар [ключ, запис] для всіх поточних записів у сховищі
-     * @description Метод повертає знімок поточних записів у сховищі у вигляді масиву пар [ключ, запис].
-     * Знімок не включає прострочені записи, які були видалені під час виклику методу.
-     * */
-    entriesSnapshot(): Array<[K, RecordEntry<V>]> {
-        return Array.from(this.store.entries());
-    }
 
     /**
      * @method checkExpired Перевіряє, чи прострочено запис, і видаляє його, якщо так
