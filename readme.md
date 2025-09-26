@@ -155,9 +155,9 @@ npm install keynest-store
 import KNStore from "keynest-store";
 
 const kv = new KNStore<string, number>({
-    cleanupEnabled: true, // вмикає автоматичне очищення неактивних записів
-    cleanupIntervalMs: 1000 * 60 * 60, // інтервал між перевірками очищення (1 година)
-    staleThresholdMs: 1000 * 60 * 60 * 2 // час, після якого запис вважається застарілим (2 години)
+    cleanupEnabled: true,
+    cleanupIntervalMs: 1000 * 60 * 60, // (1 година)
+    staleThresholdMs: 1000 * 60 * 60 * 2 // (2 години)
 });
 ```
 
