@@ -2,6 +2,8 @@
 
 ---
 
+[🇬🇧 English](#english) | [🇺🇦 Українська](#українська)
+
 ## 🇬🇧 English version
 
 ### 🔑 What is KeyNest?
@@ -108,7 +110,7 @@ userStore.set("u1", { id: 1, name: "Alice" }, 10000);
 - Lightweight, zero dependencies
 
 ---
-## 🇺🇦 Українська версія
+## Українська
 
 ### 🔑 Що таке KeyNest?
 
