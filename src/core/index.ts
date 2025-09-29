@@ -71,6 +71,10 @@ export class Store<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>
             entry.schedulerTaskId = this.scheduler.task(`expire-${String(key)}`, ttlMs);
         }
         this.store.set(key, entry);
+
+        if (this.options.cleanupEnabled && !this.cleanupTimer) {
+            this.startCleanup();
+        }
     }
 
     /**
@@ -171,6 +175,9 @@ export class Store<K extends Key, V> extends TypedEventEmitter<StoreEvents<K, V>
                 this.store.delete(key);
                 list.push({key, entry});
             }
+        }
+        if (list.length === 0) {
+            this.stopCleanup();
         }
         this.emit('prune', list);
 
